@@ -1,0 +1,8 @@
+#  The format is: mergedName numberOfComponents searchStrings
+
+Unknown 1  Unknown Ventricle  Inf-Lat-Vent Cerebellum CSF Brain-Stem Fluid_Inside_Eyes Soft_Nonbrain_Tissue Skull vessel choroid
+GlobalWM 1 Cerebral-White Optic-Chiasm
+GlobalGM 1 Cerebral-Cortex Caudate Hippocampus Amygdala hypointensities Accumbens Thalamus VentralDC Putamen Pallidum  
+
+
+
