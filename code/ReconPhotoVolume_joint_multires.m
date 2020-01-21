@@ -84,8 +84,8 @@ tic
 %%%%%%%%%%%%%
 
 addpath(FS_MATLAB_PATH);
-addpath([pwd() '/functions']);
-addpath ~/matlab/packages/lbfgsb3.0_mex1.2/
+% addpath([pwd() '/functions']);
+% addpath ~/matlab/packages/lbfgsb3.0_mex1.2/
 
 %%%%%%%%%%%%%%
 if strcmp(outputWarpedRef(end-3:end),'.mgz')==0
@@ -325,12 +325,12 @@ for mode=1:3
                 idx=sort([4*Nims+1:2:length(x)-12 4*Nims+2:2:length(x)-12]);
             end
             x(idx)=x(idx)*TARGET_RES(s)/TARGET_RES(Nscales);
-%             info.xs(:,idx)=info.xs(:,idx)*TARGET_RES(s)/TARGET_RES(Nscales);
+            info.xs(:,idx)=info.xs(:,idx)*TARGET_RES(s)/TARGET_RES(Nscales);
         else
             paramsOptim{mode}=x;
         end
         
-%         historyX{mode}=[historyX{mode}; info.xs];
+        historyX{mode}=[historyX{mode}; info.xs];
         historyCost{mode}=[historyCost{mode}; info.err(:,1) ];
     end
     disp(' ');

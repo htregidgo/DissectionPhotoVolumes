@@ -36,8 +36,10 @@ function SegmentPhotosWithSAMSEG(inputVol,inputVolMask,inputWarpedRef,outputDir,
 % inputWarpedRef='/autofs/cluster/vive/UW_photo_recon/recons/outputsHardAtlasBin/18-1132.warped_ref.mgz';
 % outputDir='/autofs/cluster/vive/UW_photo_recon/recons/outputsHardAtlasBin/18-1132-samseg/';
 
-ROB_REG='/usr/local/freesurfer/stable6_0_0/bin/mri_robust_register';
-EXVIVO_SAMSEG_FS_DIR='/autofs/space/panamint_005/users/iglesias/fsdevsamsegexvivo/';
+% ROB_REG='/usr/local/freesurfer/stable6_0_0/bin/mri_robust_register';
+% EXVIVO_SAMSEG_FS_DIR='/autofs/space/panamint_005/users/iglesias/fsdevsamsegexvivo/';
+ROB_REG = '/home/henry/Documents/Brain/Freesurfer/freesurfer/bin/mri_robust_register';
+EXVIVO_SAMSEG_FS_DIR = '/home/henry/Documents/Brain/Freesurfer/freesurfer/';
 
 % STUFF YOU PROBABLY SHOULDN'T TOUCH
 BG_NOISE_MAX=3; % maximum level of noise that we introduce in background to make samseg work
@@ -51,7 +53,8 @@ end
 
 %%%%%%%%%%%
 
-addpath functions
+% addpath functions
+
 
 % Output and temp directories
 if exist(outputDir,'dir')==0
@@ -85,6 +88,13 @@ MRIwrite(mriCorr,[outputDir '/corrected.nii.gz']);
 disp('Preparing input scans...');
 inputs=[];
 if SAMSEG_CHANNELS==1 % simply rgb->gray
+    mri_uncorrected = mri;
+    mri_uncorrected.vol = mean(mri.vol,4);
+    aux=mri_uncorrected.vol(mri_uncorrected.vol==0); 
+    aux=aux+BG_NOISE_MAX*rand(size(aux)); 
+    mri_uncorrected.vol(mri_uncorrected.vol==0)=aux;
+    MRIwrite(mri_uncorrected,[outputDir,'/uncorrected_gray.nii.gz'])
+    
     mri.vol=mean(mriCorr.vol,4);
     aux=mri.vol(mri.vol==0); aux=aux+BG_NOISE_MAX*rand(size(aux)); mri.vol(mri.vol==0)=aux;
     inputs{1}=[outputDir '/corrected_gray.nii.gz'];
