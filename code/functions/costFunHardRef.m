@@ -60,7 +60,10 @@ if exist('refvals','var')==0 || isempty(refvals)
     refvals(isnan(refvals))=0;
 end
 
-% Now resample photos, unless provided already!
+% Now resample photos, unless provided already!% if nargin<6    % default is L2
+%     use_L1=0;
+% end
+
 if exist('phvals','var')==0 || isempty(phvals) ...
         || exist('mvals','var')==0 || isempty(mvals)
     phvals = zeros([size(IIph), 3]);
