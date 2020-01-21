@@ -63,12 +63,11 @@ function ReconPhotoVolume_joint_multires(inputPhotoDir,inputREFERENCE,outputVol,
 %
 
 %%%%%
+
 REL_DICE_INTER_WEIGHT = 10; % 50;  % mask of reference to mask of photo
 REL_DICE_INTRA_WEIGHT = 2/50; % mask of photo: slice N to N+1
 REL_NCC_INTRA_WEIGHT = 1/50;  % ncc of photo: slice N to N+1
 REL_DETERMINANT_COST = 0.1/50;  % determinant of affine transform of photos
-
-
 
 %%%%%%%%%%%%%
 
@@ -76,6 +75,12 @@ REL_DETERMINANT_COST = 0.1/50;  % determinant of affine transform of photos
 % SURE YOU ALSO CHANGE IT IN THE COST FUNCTION costFun.m
 FACTOR_AFFINE_MAT=20;
 FACTOR_SCALING = 20;
+
+%%%%%%%%%%%%%
+
+% Number of pre/post slices to add at the photo stack
+Nphotos_pre = 2;
+Nphotos_post = 2;
 
 %%%%%%%%%%%%%
 
@@ -101,6 +106,10 @@ Nphotos=length(d);
 Iorig=[];
 Morig=[];
 grouping=[]; % I don't use it right now, but maybe in the future...
+for n=1:Nphotos_pre
+    Iorig{end+1}=zeros(3,1);
+    Morig{end+1}=1;
+end
 for n=1:Nphotos
     X=imread([inputPhotoDir '/' d(n).name(1:end-4) '.tif']);
     load([inputPhotoDir '/' d(n).name(1:end)],'LABELS'); Y=LABELS; clear LABELS
@@ -115,11 +124,22 @@ for n=1:Nphotos
         Morig{end+1}=mask;
     end
 end
+for n=1:Nphotos_post
+    Iorig{end+1}=zeros(3,1);
+    Morig{end+1}=1;
+end
 
 %%%%%%%%%%%%%%%
 
-Nslices=length(Iorig);
 Nscales = length(TARGET_RES);
+Nslices=length(Iorig);
+if exist([inputPhotoDir filesep '..' filesep 'slice_order.mat'])
+    load([inputPhotoDir filesep '..' filesep 'slice_order.mat'], 'slice_order');
+    slice_order = [1:Nphotos_pre slice_order+Nphotos_pre slice_order(end)+Nphotos_pre+1:slice_order(end)+Nphotos_pre+Nphotos_post];
+else
+    slice_order = 1:Nslices;
+end
+
 I=[];
 M=[];
 disp(['Resampling to highest target resolutioscheduleITsn: ' num2str(TARGET_RES(Nscales)) ' mm']);
@@ -128,6 +148,9 @@ for n=1:Nslices
     % M{n}=imdilate(imresize(double(Morig{n}),PHOTO_RES/TARGET_RES(Nscales))>0.5,strel('disk',ceil(2/TARGET_RES(Nscales))));
     M{n}=imresize(double(Morig{n}),PHOTO_RES/TARGET_RES(Nscales))>0.5;
     I{n}(M{n}==0)=0;
+        if length(size(I{n})) < 3
+        I{n} = zeros(3,1);
+    end
 end
 
 %%%%%%%%%%%%%%%%%
@@ -139,8 +162,13 @@ Mmri=[];
 cogs=zeros(Nslices,2);
 for n=1:Nslices
     [r,c]=find(M{n});
-    cogs(n,1)=round(mean(r));
-    cogs(n,2)=round(mean(c));
+    if isempty(r)
+        cogs(n,1)=1;
+        cogs(n,2)=1;
+    else
+        cogs(n,1)=round(mean(r));
+        cogs(n,2)=round(mean(c));
+    end
 end
 
 semiLen = round(1.4 * max(cogs));

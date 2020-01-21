@@ -141,13 +141,23 @@ for z=2:size(X,3)
         a = aux(m);
         aux=X(:,:,z-1,c);
         b = aux(m);
-        rhos(z-1,c)=corr(a,b);
+        if isempty(a) || isempty(b)
+            rhos(z-1,c)=0;
+        else
+            rhos(z-1,c)=corr(a,b);
+            if isnan(rhos(z-1,c))
+                rhos(z-1,c) = 0;
+            end
+        end
     end
     aux=Y(:,:,z);
     a=aux(m);
     aux=Y(:,:,z-1);
     b=aux(m);
     diceIntras(z-1) = 2 * sum(a.*b) / (sum(a.*a)+sum(b.*b));
+	if isnan(diceIntras(z-1))
+        diceIntras(z-1) = 0;
+    end
 end
 
 cost = -  REL_NCC_INTRA_WEIGHT * sum(rhos(:)) ...

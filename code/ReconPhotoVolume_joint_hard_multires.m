@@ -78,6 +78,12 @@ FACTOR_AFFINE_MAT=20;
 
 %%%%%%%%%%%%%
 
+% Number of pre/post slices to add at the photo stack
+Nphotos_pre = 2;
+Nphotos_post = 2;
+
+%%%%%%%%%%%%%
+
 tic
 
 %%%%%%%%%%%%%
@@ -93,13 +99,16 @@ end
 
 %%%%%%%%%%%%%%
 
-
 disp('Extracting slices from photographs')
 d=dir([inputPhotoDir '/*.mat']);
 Nphotos=length(d);
 Iorig=[];
 Morig=[];
 grouping=[]; % I don't use it right now, but maybe in the future...
+for n=1:Nphotos_pre
+    Iorig{end+1}=zeros(3,1);
+    Morig{end+1}=1;
+end
 for n=1:Nphotos
     X=imread([inputPhotoDir '/' d(n).name(1:end-4) '.tif']);
     load([inputPhotoDir '/' d(n).name(1:end)],'LABELS'); Y=LABELS; clear LABELS
@@ -114,11 +123,22 @@ for n=1:Nphotos
         Morig{end+1}=mask;
     end
 end
+for n=1:Nphotos_post
+    Iorig{end+1}=zeros(3,1);
+    Morig{end+1}=1;
+end
 
 %%%%%%%%%%%%%%%
 
-Nslices=length(Iorig);
 Nscales = length(TARGET_RES);
+Nslices=length(Iorig);
+if exist([inputPhotoDir filesep '..' filesep 'slice_order.mat'])
+    load([inputPhotoDir filesep '..' filesep 'slice_order.mat'], 'slice_order');
+    slice_order = [1:Nphotos_pre slice_order+Nphotos_pre slice_order(end)+Nphotos_pre+1:slice_order(end)+Nphotos_pre+Nphotos_post];
+else
+    slice_order = 1:Nslices;
+end
+
 I=[];
 M=[];
 disp(['Resampling to highest target resolution: ' num2str(TARGET_RES(Nscales)) ' mm']);
@@ -127,6 +147,9 @@ for n=1:Nslices
     % M{n}=imdilate(imresize(double(Morig{n}),PHOTO_RES/TARGET_RES(Nscales))>0.5,strel('disk',ceil(2/TARGET_RES(Nscales))));
     M{n}=imresize(double(Morig{n}),PHOTO_RES/TARGET_RES(Nscales))>0.5;
     I{n}(M{n}==0)=0;
+    if length(size(I{n})) < 3
+        I{n} = zeros(3,1);
+    end
 end
 
 
@@ -139,8 +162,13 @@ Mmri=[];
 cogs=zeros(Nslices,2);
 for n=1:Nslices
     [r,c]=find(M{n});
-    cogs(n,1)=round(mean(r));
-    cogs(n,2)=round(mean(c));
+    if isempty(r)
+        cogs(n,1)=1;
+        cogs(n,2)=1;
+    else
+        cogs(n,1)=round(mean(r));
+        cogs(n,2)=round(mean(c));
+    end
 end
 
 semiLen = round(1.4 * max(cogs));
@@ -157,7 +185,6 @@ for n=1:Nslices
     Imri{Nscales}.vol(idx1(1):idx2(1),idx1(2):idx2(2),n,:)=reshape(I{n},[size(M{n}) 1 3]);
     Mmri{Nscales}.vol(idx1(1):idx2(1),idx1(2):idx2(2),n)=M{n};
 end
-
 
 
 %%%%%%%%%%%%%%%%%
@@ -183,7 +210,6 @@ for s=1:Nscales-1
         Mmri{s}.vol(:,:,n)=mri.vol>0.5;
     end
 end
-
 
 
 %%%%%%%%%%%%%%%%%%%%%
