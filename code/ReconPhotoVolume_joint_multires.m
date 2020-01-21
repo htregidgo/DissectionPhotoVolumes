@@ -144,9 +144,11 @@ I=[];
 M=[];
 disp(['Resampling to highest target resolutioscheduleITsn: ' num2str(TARGET_RES(Nscales)) ' mm']);
 for n=1:Nslices
-    I{n}=imresize(Iorig{n},PHOTO_RES/TARGET_RES(Nscales));
+    
+    n_ordered = slice_order(n);
+    I{n}=imresize(Iorig{n_ordered},PHOTO_RES/TARGET_RES(Nscales));
     % M{n}=imdilate(imresize(double(Morig{n}),PHOTO_RES/TARGET_RES(Nscales))>0.5,strel('disk',ceil(2/TARGET_RES(Nscales))));
-    M{n}=imresize(double(Morig{n}),PHOTO_RES/TARGET_RES(Nscales))>0.5;
+    M{n}=imresize(double(Morig{n_ordered}),PHOTO_RES/TARGET_RES(Nscales))>0.5;
     I{n}(M{n}==0)=0;
         if length(size(I{n})) < 3
         I{n} = zeros(3,1);
