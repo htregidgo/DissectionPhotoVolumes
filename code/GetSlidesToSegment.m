@@ -1,6 +1,6 @@
 
 %%%%%%%%%% Parameters
-filepath = [pwd() '/segmentation_slices.csv'];
+filepath = [pwd() filesep 'data' filesep 'segmentation_slices.csv'];
 MRI_PATH='/home/acasamitjana/Results/UWPhoto_mod/hard/';
 PHOTO_PATH='/home/acasamitjana/Data/UWphoto/Photo_data';
 
@@ -27,7 +27,12 @@ for it_lines=1:num_lines
     init_slice = str2num(tline{2});
     fi_slice = str2num(tline{3});
     
-    num_slice = randi([init_slice fi_slice]);
+    if length(tline) > 3  %it means that we have a fixed slice number
+        num_slice = str2num(tline{4});
+    else
+        num_slice = randi([init_slice fi_slice]);
+    end
+    
     
     %Load slice from MRI.
     MRI = MRIread([MRI_PATH filesep subject filesep subject '.hard.recon.mgz']);
@@ -43,10 +48,10 @@ for it_lines=1:num_lines
         load([inputPhotoDir '/' d(n).name(1:end)],'LABELS'); Y=LABELS; clear LABELS
         unique_y = unique(Y);
         
-        if Nslices + length(unique_y) > num_slice
-            clear Y; load([inputPhotoDir '/' d(n-1).name(1:end)],'LABELS'); Y=LABELS; clear LABELS
+        if num_slice <= Nslices + length(unique_y) - 1  %1 is for background
+            clear Y; load([inputPhotoDir '/' d(n).name(1:end)],'LABELS'); Y=LABELS; clear LABELS
             
-            X=imread([inputPhotoDir '/' d(n-1).name(1:end-4) '.tif']);
+            X=imread([inputPhotoDir '/' d(n).name(1:end-4) '.tif']);
             
             label_slice = num_slice - Nslices;
         
@@ -62,7 +67,7 @@ for it_lines=1:num_lines
         
             break
         else
-            Nslices = Nslices + length(unique_y);
+            Nslices = Nslices + length(unique_y) - 1;
         end
                
     end    
