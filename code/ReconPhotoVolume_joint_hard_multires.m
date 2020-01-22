@@ -89,8 +89,8 @@ tic
 %%%%%%%%%%%%%
 
 addpath(FS_MATLAB_PATH);
-addpath([pwd() '/functions']);
-addpath ~/matlab/packages/lbfgsb3.0_mex1.2/
+addpath([fileparts(mfilename('fullpath')) filesep 'functions/lbfgsb3.0_mex1.2/']);
+addpath([fileparts(mfilename('fullpath')) filesep 'functions']);
 
 %%%%%%%%%%%%%%
 if strcmp(outputWarpedRef(end-3:end),'.mgz')==0
@@ -143,7 +143,6 @@ I=[];
 M=[];
 disp(['Resampling to highest target resolution: ' num2str(TARGET_RES(Nscales)) ' mm']);
 for n=1:Nslices
-    
     n_ordered = slice_order(n);
     I{n}=imresize(Iorig{n_ordered},PHOTO_RES/TARGET_RES(Nscales));
     % M{n}=imdilate(imresize(double(Morig{n}),PHOTO_RES/TARGET_RES(Nscales))>0.5,strel('disk',ceil(2/TARGET_RES(Nscales))));

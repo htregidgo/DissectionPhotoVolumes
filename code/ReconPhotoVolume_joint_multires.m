@@ -89,8 +89,8 @@ tic
 %%%%%%%%%%%%%
 
 addpath(FS_MATLAB_PATH);
-addpath([pwd() '/functions']);
-addpath ~/matlab/packages/lbfgsb3.0_mex1.2/
+addpath([fileparts(mfilename('fullpath')) filesep 'functions/lbfgsb3.0_mex1.2/']);
+addpath([fileparts(mfilename('fullpath')) filesep 'functions']);
 
 %%%%%%%%%%%%%%
 if strcmp(outputWarpedRef(end-3:end),'.mgz')==0
