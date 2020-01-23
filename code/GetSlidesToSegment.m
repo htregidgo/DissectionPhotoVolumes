@@ -2,7 +2,18 @@
 %%%%%%%%%% Parameters
 filepath = [pwd() filesep 'data' filesep 'segmentation_slices.csv'];
 MRI_PATH='/home/acasamitjana/Results/UWPhoto_mod/hard/';
+if ~exist(MRI_PATH,'dir')
+    
+    MRI_PATH = '/home/henry/Documents/Brain/UWphoto/Results_hard';
+    
+end
+    
 PHOTO_PATH='/home/acasamitjana/Data/UWphoto/Photo_data';
+if ~exist(PHOTO_PATH,'dir')
+    
+    PHOTO_PATH = '/home/henry/Documents/Brain/UWphoto/Photo_data_updated';
+    
+end
 
 
 % Set up these parameters according to the reconstruction used in freeivew
@@ -41,6 +52,14 @@ for it_lines=1:num_lines
     d=dir([inputPhotoDir '/*.mat']);
     Nphotos=length(d);
     Nslices = Nphotos_pre;
+    
+    if exist(fullfile(PHOTO_PATH,subject,'slice_order.mat'),'file')
+        
+        load(fullfile(PHOTO_PATH,subject,'slice_order.mat'),'slice_order')
+        
+        num_slice = Nphotos_pre+slice_order(num_slice-Nphotos_pre);
+        
+    end
     
     %Load LABELS until you get the file you want.
     for n=1:Nphotos
