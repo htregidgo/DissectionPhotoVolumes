@@ -1,5 +1,5 @@
 function UWphoto_function_segFromManualLabel(inputPhotoDir,inputREFERENCE,outputlabel,...
-    paramMat,PHOTO_RES,SLICE_THICKNESS,TARGET_RES,niftiMask,niftiLabel)
+    paramMat,PHOTO_RES,SLICE_THICKNESS,TARGET_RES,niftiMask,niftiLabel,recontype)
 %UWPHOTO_FUNCTION_SEGFROMMANUALLABEL Function to reconstruct a photo volume using a probabilistic atlas as reference
 %
 % PARAMETERS
@@ -274,14 +274,21 @@ REFmri.vox2ras0(1:3,4)=REFmri.vox2ras0(1:3,4)+cogPH-cogREF;
 %% Load optimised parameters from reconstruction run
 
 load(paramMat,'paramsOptim')
-mode = 3;
+mode = find(~cellfun('isempty',paramsOptim),1,'last');
 x = paramsOptim{mode};
 
 disp('Optimization done!');
-[~,~, warpedPhotos, warpedMasks, ~] = ...
-    costFun_labels(x,cogREF,REFmri,Imri{Nscales},Mmri{Nscales},IIph{Nscales},JJph{Nscales},KKph{Nscales},...
-    REL_NCC_INTRA_WEIGHT,REL_DICE_INTRA_WEIGHT,REL_DICE_INTER_WEIGHT,...
-    REL_DETERMINANT_COST, mode);
+if strcmpi(recontype,'soft')
+    [~,~, warpedPhotos, warpedMasks, ~] = ...
+        costFun_labels(x,cogREF,REFmri,Imri{Nscales},Mmri{Nscales},IIph{Nscales},JJph{Nscales},KKph{Nscales},...
+        REL_NCC_INTRA_WEIGHT,REL_DICE_INTRA_WEIGHT,REL_DICE_INTER_WEIGHT,...
+        REL_DETERMINANT_COST, mode);
+else
+    [~,~, warpedPhotos, warpedMasks, ~] = ...
+        costFunHardRef_labels(x,cogREF,REFmri,Imri{Nscales},Mmri{Nscales},IIph{Nscales},JJph{Nscales},KKph{Nscales},...
+        REL_NCC_INTRA_WEIGHT,REL_DICE_INTRA_WEIGHT,REL_DICE_INTER_WEIGHT,...
+        REL_DETERMINANT_COST, mode);
+end
 
 warpedLabels = warpedMasks;
 warpedLabels(:,:,target_slice)=round(squeeze(warpedPhotos(:,:,target_slice,1)));

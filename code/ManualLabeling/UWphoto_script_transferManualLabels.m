@@ -43,6 +43,8 @@ end
 
 dlist_cases = dir(fullfile(topPhotoDir,'*/*MATLAB')); % list cases
 
+%% soft specific variables
+
 topOutDir = fullfile(PHOTO_RECON_HOME,'Results');
 if ~exist(topOutDir,'dir')
     topOutDir=uigetdir(pwd,'Top level results directory');
@@ -67,6 +69,8 @@ manualSegsdir = fullfile(PHOTO_RECON_HOME,'ManualSegmentations');
 
 problems_flag = true(size(dlist_cases));
 
+recontype = 'soft';
+
 %% iterate through cases
 
 for il = 1:length(dlist_cases)
@@ -90,7 +94,7 @@ for il = 1:length(dlist_cases)
         mkdir(outputDir)
     end
     
-    outputLabel = fullfile(outputDir,[caseID,'_manualLabel.mgz']);
+    outputLabel = fullfile(outputDir,[caseID,'_soft_manualLabel.mgz']);
     outputVolMask = fullfile(outputDir,[caseID,'_soft_mask.mgz']);
     outputWarpedRef = fullfile(outputDir,[caseID,'_soft_regatlas.mgz']);
     paramMat = fullfile(outputDir,[caseID,'_soft_history.mat']);
@@ -99,7 +103,97 @@ for il = 1:length(dlist_cases)
         if forceFlag || ~exist(outputLabel,'file')
             UWphoto_function_segFromManualLabel(inputPhotoDir,inputREFERENCE,outputLabel,...
                 paramMat,PHOTO_RES,SLICE_THICKNESS,...
-                TARGET_RES,niftiMask,niftiLabel)
+                TARGET_RES,niftiMask,niftiLabel,recontype)
+            
+        end
+    
+        problems_flag(il)=false;
+    catch
+        warning(['Problem with running case ',caseID])
+    end
+    
+end
+
+%% check for errors
+
+if any(problems_flag)
+    
+    incomplete_volumes = {dlist_cases(problems_flag).name};
+    
+    
+    fprintf('\n========================================\n')
+    fprintf('reconstructions complete with errors:')
+    for il=1:length(incomplete_volumes)
+        fprintf(['\n',incomplete_volumes{il}])
+    end
+    fprintf('\n========================================\n')
+    
+else
+   
+    fprintf('\n========================================\n')
+    fprintf('reconstructions complete with no errors!')
+    fprintf('\n========================================\n')
+    
+end
+
+%% do same for the hard cases 
+
+topOutDir = fullfile(PHOTO_RECON_HOME,'Results_hard');
+if ~exist(topOutDir,'dir')
+    topOutDir=uigetdir(pwd,'Top level results directory');
+    
+    if isequal(0,topOutDir)
+        error('top level results directory not set')
+    end
+end
+
+problems_flag = true(size(dlist_cases));
+
+recontype = 'hard';
+
+topFLAIRdir = fullfile(PHOTO_RECON_HOME,'FLAIR_Scan_Data','MaskComparison');
+
+
+%% iterate through cases
+
+for il = 1:length(dlist_cases)
+
+    [~,caseID,~] = fileparts(dlist_cases(il).folder);
+    inputPhotoDir = fullfile(dlist_cases(il).folder,dlist_cases(il).name);
+    
+    dlist_labels = dir(fullfile(manualSegsdir,[caseID,'*Labels*']));
+    dlist_masks = dir(fullfile(manualSegsdir,[caseID,'*Mask*']));
+    
+    
+    compareID = strrep(caseID,'-','_');
+    
+    dlist_inputReference = dir(fullfile(topFLAIRdir,'NP*',...
+        ['*',compareID,'*ventCrctd*']));
+    
+    inputREFERENCE = fullfile(dlist_inputReference.folder,...
+        dlist_inputReference.name);
+    
+    if isempty(dlist_labels)
+        continue
+    end
+    
+    niftiMask = fullfile(dlist_masks.folder,dlist_masks.name);
+    niftiLabel = fullfile(dlist_labels.folder,dlist_labels.name);
+    
+    outputDir = fullfile(topOutDir,caseID);
+    
+    if ~exist(outputDir,'dir')
+        mkdir(outputDir)
+    end
+    
+    outputLabel = fullfile(outputDir,[caseID,'_hard_manualLabel.mgz']);
+    paramMat = fullfile(outputDir,[caseID,'.hard.mat']);
+     
+    try
+        if forceFlag || ~exist(outputLabel,'file')
+            UWphoto_function_segFromManualLabel(inputPhotoDir,inputREFERENCE,outputLabel,...
+                paramMat,PHOTO_RES,SLICE_THICKNESS,...
+                TARGET_RES,niftiMask,niftiLabel,recontype)
             
         end
     
