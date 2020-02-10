@@ -6,6 +6,10 @@
 % dice scores are produced in a vector with scores placed according to the
 % label value. ie dice_scores(<label value WM>).
 
+if ~exist('forceFlag','var')
+    forceFlag=false;
+end
+
 %% setup for file structure
 
 PHOTO_RECON_HOME=getenv('PHOTO_RECON_HOME');
@@ -75,7 +79,8 @@ for il=1:length(dlist_manLabelsAll)
     pth_merged_samseg = fullfile(dlist_manLabelsAll(il).folder,...
         [infile(1:12),'_samseg_merged.mgz']);
     
-    if exist(pth_merged_manual,'file') && exist(pth_merged_samseg,'file')
+    if exist(pth_merged_manual,'file') && exist(pth_merged_samseg,'file')...
+            && ~forceFlag
         vol_merged_manual = MRIread(pth_merged_manual);
         vol_merged_samseg = MRIread(pth_merged_samseg);
     else

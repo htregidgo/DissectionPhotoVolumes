@@ -176,7 +176,11 @@ for n=1:Nslices
     
     I{n}=imresize(Slices_original{n_ordered},PHOTO_RES/TARGET_RES(Nscales),'nearest'); %#ok<AGROW>
     M{n}=imresize(double(Masks_original{n_ordered}),PHOTO_RES/TARGET_RES(Nscales))>0.5; %#ok<AGROW>
-    I{n}(M{n}==0)=0; %#ok<AGROW>
+    % In the registration code this is where the mask is applied. Applying
+    % this here in the label import code can cause labels outside of the
+    % mask area to be incorrectly removed so we've commented it out and
+    % left it for reference.
+    %     I{n}(M{n}==0)=0; %#ok<AGROW> 
     if length(size(I{n})) < 3
         I{n} = zeros(3,1); %#ok<AGROW>
     end
@@ -221,6 +225,9 @@ end
 disp('Building resolution pyramid');
 for s=1:Nscales-1
     for n=1:Nslices
+        % these downsamples could possibly be changed to nearest neighbour
+        % as we are working with labels. I'm leaving them as the lower
+        % resolutions don't appear to be used much.
         mri=Imri{Nscales}; mri.vol=mri.vol(:,:,n,1); mri=downsampleMRI2d(mri,TARGET_RES(s)/TARGET_RES(Nscales));
         if n==1
             Imri{s}.vol=zeros([size(mri.vol) Nslices 3]);
