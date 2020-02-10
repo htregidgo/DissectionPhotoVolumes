@@ -62,12 +62,11 @@ hard_xticks = table_labels.Labels_present2(...
 
 %% make plots
 
-plotx =repmat((1:length(soft_xticks))',[1,size(full_soft_dice,2)]);
+% plotx =repmat((1:length(soft_xticks))',[1,size(full_soft_dice,2)]);
 ploty =full_soft_dice(label_present_soft,:);
 
 h_soft = figure;
-scatter(plotx(:),ploty(:))
-set(gca,'xtick',1:length(soft_xticks),'xticklabel',soft_xticks)
+boxplot(ploty',soft_xticks)
 xtickangle(60)
 set(h_soft,'Position',[760,155,1280,720])
 xlabel('Label')
@@ -81,7 +80,7 @@ plotx =repmat((1:length(hard_xticks))',[1,size(full_hard_dice,2)]);
 ploty =full_hard_dice(label_present_hard,:);
 
 h_hard = figure;
-scatter(plotx(:),ploty(:))
+boxplot(ploty',soft_xticks)
 set(gca,'xtick',1:length(hard_xticks),'xticklabel',hard_xticks)
 xtickangle(60)
 set(h_hard,'Position',[760,155,1280,720])
@@ -94,8 +93,8 @@ pause(2)
 
 %% save plots
 
-saveas(h_soft,fullfile(top_scores_dir,'soft_diceScores.fig'))
-saveas(h_soft,fullfile(top_scores_dir,'soft_diceScores.png'))
+saveas(h_soft,fullfile(top_scores_dir,'soft_diceScores_box.fig'))
+saveas(h_soft,fullfile(top_scores_dir,'soft_diceScores_box.png'))
 
-saveas(h_hard,fullfile(top_scores_dir,'hard_diceScores.fig'))
-saveas(h_hard,fullfile(top_scores_dir,'hard_diceScores.png'))
+saveas(h_hard,fullfile(top_scores_dir,'hard_diceScores_box.fig'))
+saveas(h_hard,fullfile(top_scores_dir,'hard_diceScores_box.png'))
