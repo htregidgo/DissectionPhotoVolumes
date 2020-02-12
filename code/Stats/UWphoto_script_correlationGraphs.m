@@ -103,7 +103,7 @@ for il=3:length(strfields)
     
     %% hard statistics
     
-    CorrelationStruct(strctI).soft.raw = hardplot;
+    CorrelationStruct(strctI).hard.raw = hardplot;
     
     [rho,p,rhoLower,rhoUpper]=corrcoef(MRIsplot,hardplot);
     
@@ -139,7 +139,7 @@ for il=3:length(strfields)
     
     %% volume corrected hard statistics
     
-    CorrelationStruct(strctI).soft.raw = hardCrct;
+    CorrelationStruct(strctI).hardCrctd.raw = hardCrct;
     
     [rho,p,rhoLower,rhoUpper]=corrcoef(MRIsplot,hardCrct);
     
@@ -161,7 +161,7 @@ for il=3:length(strfields)
     hold on
     plot(MRIsplot,b(1)+b(2)*MRIsplot,'r','LineWidth',2)
     
-    pltTitle = strrep(['Hard: ', strfields{il}],'_',' ');
+    pltTitle = strrep(['Hard (VC): ', strfields{il}],'_',' ');
     
     title(pltTitle,'Interpreter','none')
     
@@ -189,6 +189,172 @@ for il=3:length(strfields)
 
 end
 
+%% handle ventricle outlier case
+
+LatVentIndices = [34,36,56];
+
+for il=1:length(LatVentIndices)
+    
+    Icase = LatVentIndices(il);
+    
+    newloc = length(CorrelationStruct)+1;
+    
+    MRIsplot = CorrelationStruct(Icase).MRI.raw;
+    hardCrct = CorrelationStruct(Icase).hardCrctd.raw;
+    hardplot = CorrelationStruct(Icase).hard.raw;
+    softplot = CorrelationStruct(Icase).soft.raw;
+    
+    %% find outlier
+    
+    [mVal,mInd]=max([MRIsplot;hardCrct;hardplot;softplot],[],2);
+    
+    IQR_foroutlier = iqr(MRIsplot);
+    
+    upperQrtl = prctile(MRIsplot,75);
+    
+    if mVal(1) < upperQrtl + 1.5*IQR_foroutlier
+        warning('found value not an outlier')
+        continue
+    end
+        
+    if any(mInd~=mInd(1))
+        warning('Not located outlier');
+        continue
+    end
+    
+    
+    MRIsplot(mInd(1)) = [];
+    hardCrct(mInd(1)) = [];
+    hardplot(mInd(1)) = [];
+    softplot(mInd(1)) = [];
+    
+    CorrelationStruct(newloc).Label = [CorrelationStruct(Icase).Label,'_pruned'];
+    CorrelationStruct(newloc).MRI.raw = MRIsplot;
+    CorrelationStruct(newloc).removedIndex = mInd(1);
+    
+    %% soft statistics
+    
+    CorrelationStruct(newloc).soft.raw = softplot;
+    
+    [rho,p,rhoLower,rhoUpper]=corrcoef(MRIsplot,softplot);
+    
+    CorrelationStruct(newloc).soft.corrcoef.rho = rho(1,2);
+    CorrelationStruct(newloc).soft.corrcoef.p = p(1,2);
+    CorrelationStruct(newloc).soft.corrcoef.rhoLower = rhoLower(1,2);
+    CorrelationStruct(newloc).soft.corrcoef.rhoUpper = rhoUpper(1,2);
+    
+    [b,fitstats] = robustfit(MRIsplot,softplot);
+    
+    CorrelationStruct(newloc).soft.robustfit.b = b;
+    CorrelationStruct(newloc).soft.robustfit.stats = fitstats;
+    
+    
+    %% plot figures
+    
+    fig_soft=figure;
+    plot(MRIsplot,softplot,'*')
+    hold on
+    plot(MRIsplot,b(1)+b(2)*MRIsplot,'r','LineWidth',2)
+    
+    pltTitle = strrep(['Soft: ', CorrelationStruct(newloc).Label],'_',' ');
+    
+    title(pltTitle,'Interpreter','none')
+    
+    str_r=[' r= ',num2str(rho(1,2)),', p= ',num2str(p(1,2))];
+    T = text(min(get(gca, 'xlim')), max(get(gca, 'ylim')), str_r);
+    set(T, 'fontsize', 12, 'verticalalignment', 'top', 'horizontalalignment', 'left');
+    
+    xlabel('MRI label volume')
+    ylabel('Photo label volume')
+    
+    
+    %% hard statistics
+    
+    CorrelationStruct(newloc).hard.raw = hardplot;
+    
+    [rho,p,rhoLower,rhoUpper]=corrcoef(MRIsplot,hardplot);
+    
+    CorrelationStruct(newloc).hard.corrcoef.rho = rho(1,2);
+    CorrelationStruct(newloc).hard.corrcoef.p = p(1,2);
+    CorrelationStruct(newloc).hard.corrcoef.rhoLower = rhoLower(1,2);
+    CorrelationStruct(newloc).hard.corrcoef.rhoUpper = rhoUpper(1,2);
+    
+    [b,fitstats] = robustfit(MRIsplot,hardplot);
+    
+    CorrelationStruct(newloc).hard.robustfit.b = b;
+    CorrelationStruct(newloc).hard.robustfit.stats = fitstats;
+    
+    
+    %% plot figures
+    
+    fig_hard=figure;
+    plot(MRIsplot,hardplot,'*')
+    hold on
+    plot(MRIsplot,b(1)+b(2)*MRIsplot,'r','LineWidth',2)
+    
+    pltTitle = strrep(['Hard: ', CorrelationStruct(newloc).Label],'_',' ');
+    
+    title(pltTitle,'Interpreter','none')
+    
+    str_r=[' r= ',num2str(rho(1,2)),', p= ',num2str(p(1,2))];
+    T = text(min(get(gca, 'xlim')), max(get(gca, 'ylim')), str_r);
+    set(T, 'fontsize', 12, 'verticalalignment', 'top', 'horizontalalignment', 'left');
+    
+    xlabel('MRI label volume')
+    ylabel('Photo label volume')
+    
+    
+    %% volume corrected hard statistics
+    
+    CorrelationStruct(newloc).hardCrctd.raw = hardCrct;
+    
+    [rho,p,rhoLower,rhoUpper]=corrcoef(MRIsplot,hardCrct);
+    
+    CorrelationStruct(newloc).hardCrctd.corrcoef.rho = rho(1,2);
+    CorrelationStruct(newloc).hardCrctd.corrcoef.p = p(1,2);
+    CorrelationStruct(newloc).hardCrctd.corrcoef.rhoLower = rhoLower(1,2);
+    CorrelationStruct(newloc).hardCrctd.corrcoef.rhoUpper = rhoUpper(1,2);
+    
+    [b,fitstats] = robustfit(MRIsplot,hardCrct);
+    
+    CorrelationStruct(newloc).hardCrctd.robustfit.b = b;
+    CorrelationStruct(newloc).hardCrctd.robustfit.stats = fitstats;
+    
+    
+    %% plot figures
+    
+    fig_crct=figure;
+    plot(MRIsplot,hardCrct,'*')
+    hold on
+    plot(MRIsplot,b(1)+b(2)*MRIsplot,'r','LineWidth',2)
+    
+    pltTitle = strrep(['Hard (VC): ', CorrelationStruct(newloc).Label],'_',' ');
+    
+    title(pltTitle,'Interpreter','none')
+    
+    str_r=[' r= ',num2str(rho(1,2)),', p= ',num2str(p(1,2))];
+    T = text(min(get(gca, 'xlim')), max(get(gca, 'ylim')), str_r);
+    set(T, 'fontsize', 12, 'verticalalignment', 'top', 'horizontalalignment', 'left');
+    
+    xlabel('MRI label volume')
+    ylabel('Photo label volume')
+    
+    
+    %% save figures
+    
+    saveas(fig_soft,fullfile(softdir,CorrelationStruct(newloc).Label))
+    saveas(fig_soft,fullfile(softdir,[CorrelationStruct(newloc).Label,'.tiff']))
+    
+    saveas(fig_hard,fullfile(harddir,CorrelationStruct(newloc).Label))
+    saveas(fig_hard,fullfile(harddir,[CorrelationStruct(newloc).Label,'.tiff']))
+    
+    saveas(fig_crct,fullfile(crctdir,CorrelationStruct(newloc).Label))
+    saveas(fig_crct,fullfile(crctdir,[CorrelationStruct(newloc).Label,'.tiff']))
+    
+    close all
+    
+    
+end
 
 %% save correlations statistics
 
