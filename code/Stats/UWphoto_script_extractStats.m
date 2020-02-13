@@ -4,7 +4,27 @@
 %% list cases to exclude
 % no mathcing, no matching, deformed image
 % removecases = {'18-2102','18-2127','18-1343','18-2260','19-0019','19-0138'};
-removecases = {'18-2102','18-2127','18-2260','19-0019'};
+removecases = {'18-2102',... % missing volumes
+    '18-2127',...% missing volumes
+    '18-2260',...% hemorrhage
+    '19-0019',...% missing volumes & hemorrhage
+    '18-1705',...% poor segmentation ventricles 
+    '18-1754',...% poor segmentation ventricles
+    '18-1343',...% poor segmentation deformation
+    '19-0138'... % poor segmentation cortex
+    };
+
+removaltype = [1,1,1,1,2,2,3,3];
+
+removalnotes = {'missing volumes',...
+    'missing volumes',...
+    'hemorrhage',...
+    'missing volumes & hemorrhage',...
+    'poor segmentation ventricles',...
+    'poor segmentation ventricles',...
+    'poor segmentation deformation',...
+    'poor segmentation cortex'
+    };
 
 %% setup directories
 
@@ -31,8 +51,8 @@ dlist_sftstats = dir(fullfile(softDir,'*/samseg.stats'));
 
 %% read in MRI stats
 
-instructure = struct();
-instructure(length(dlist_mristats)+length(dlist_hrdstats)...
+segVolumeInfo = struct();
+segVolumeInfo(length(dlist_mristats)+length(dlist_hrdstats)...
     +length(dlist_sftstats)) = struct();
 
 for il=1:length(dlist_mristats)
@@ -45,8 +65,26 @@ for il=1:length(dlist_mristats)
     
     intable = readtable(fullfile(dlist_mristats(il).folder,dlist_mristats(il).name),'FileType','text');
     
-    instructure(il).caseID = caseID;
-    instructure(il).segtype = 'MRI';
+    segVolumeInfo(il).caseID = caseID;
+    segVolumeInfo(il).segtype = 'MRI';
+    
+    %% check if case might need removing
+    
+    removeindex = ismember(removecases,caseID);
+    
+    if any(removeindex)
+       
+        segVolumeInfo(il).removaltype=removaltype(removeindex);
+        segVolumeInfo(il).removalnotes=removalnotes{removeindex};
+        
+    else
+        
+        segVolumeInfo(il).removaltype=0;
+        segVolumeInfo(il).removalnotes='';
+        
+    end
+    
+    %% read in volumes 
     
     for jl=1:size(intable,1)
         
@@ -58,7 +96,7 @@ for il=1:length(dlist_mristats)
         
         varname = matlab.lang.makeValidName(varname);
         
-        instructure(il).(varname) = intable.Var2(jl);
+        segVolumeInfo(il).(varname) = intable.Var2(jl);
         
     end 
     
@@ -78,8 +116,26 @@ for il=1:length(dlist_hrdstats)
     
     intable = readtable(fullfile(dlist_hrdstats(il).folder,dlist_hrdstats(il).name),'FileType','text');
     
-    instructure(structind).caseID = caseID;
-    instructure(structind).segtype = 'Hard';
+    segVolumeInfo(structind).caseID = caseID;
+    segVolumeInfo(structind).segtype = 'Hard';
+    
+    %% check if case might need removing
+    
+    removeindex = ismember(removecases,caseID);
+    
+    if any(removeindex)
+       
+        segVolumeInfo(structind).removaltype=removaltype(removeindex);
+        segVolumeInfo(structind).removalnotes=removalnotes{removeindex};
+        
+    else
+        
+        segVolumeInfo(structind).removaltype=0;
+        segVolumeInfo(structind).removalnotes='';
+        
+    end
+    
+    %% read in volumes 
     
     for jl=1:size(intable,1)
         
@@ -91,7 +147,7 @@ for il=1:length(dlist_hrdstats)
         
         varname = matlab.lang.makeValidName(varname);
         
-        instructure(structind).(varname) = intable.Var2(jl);
+        segVolumeInfo(structind).(varname) = intable.Var2(jl);
         
     end 
     
@@ -111,8 +167,26 @@ for il=1:length(dlist_hrdstats)
     
     intable = readtable(fullfile(dlist_sftstats(il).folder,dlist_sftstats(il).name),'FileType','text');
     
-    instructure(structind).caseID = caseID;
-    instructure(structind).segtype = 'Soft';
+    segVolumeInfo(structind).caseID = caseID;
+    segVolumeInfo(structind).segtype = 'Soft';
+    
+    %% check if case might need removing
+    
+    removeindex = ismember(removecases,caseID);
+    
+    if any(removeindex)
+       
+        segVolumeInfo(structind).removaltype=removaltype(removeindex);
+        segVolumeInfo(structind).removalnotes=removalnotes{removeindex};
+        
+    else
+        
+        segVolumeInfo(structind).removaltype=0;
+        segVolumeInfo(structind).removalnotes='';
+        
+    end
+    
+    %% read in volumes 
     
     for jl=1:size(intable,1)
         
@@ -124,7 +198,7 @@ for il=1:length(dlist_hrdstats)
         
         varname = matlab.lang.makeValidName(varname);
         
-        instructure(structind).(varname) = intable.Var2(jl);
+        segVolumeInfo(structind).(varname) = intable.Var2(jl);
         
     end 
     
@@ -132,17 +206,17 @@ end
 
 %% write out table 
 
-T = struct2table(instructure);
+T = struct2table(segVolumeInfo);
 
 writetable(T,fullfile(figDir,'UWphoto_fullSegmentationStats.xlsx'))
 
 
 %% remove bad apples
-strfields = fieldnames(instructure);
+strfields = fieldnames(segVolumeInfo);
 
-removeindex = ismember({instructure.caseID},removecases);
+removeindex = ismember({segVolumeInfo.caseID},removecases);
 
-processtruct = instructure(~removeindex);
+% processtruct = instructure(~removeindex);
 
 
 
@@ -168,7 +242,7 @@ matchedInfo = [cell2table(caseID),infoTable];
 
 %% get left right averages
 
-segVolumeInfo = processtruct;
+% segVolumeInfo = processtruct;
 
 flag_fieldsToAverage_left = startsWith(strfields,'Left_');
 

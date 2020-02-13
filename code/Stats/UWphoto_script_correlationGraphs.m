@@ -34,16 +34,24 @@ if ~exist(crctdir,'dir')
     mkdir(crctdir)
 end
 
+%% sort out cases to remove
+
+removalLevel = 2;
+
+removalFlag = (0<[segVolumeInfo.removaltype]) &...
+    ([segVolumeInfo.removaltype] <=removalLevel);
+
+segVolumeInfo_kept=segVolumeInfo(~removalFlag);
 
 %% setup variables
 
-mriFlag = ismember({segVolumeInfo.segtype},'MRI');
+mriFlag = ismember({segVolumeInfo_kept.segtype},'MRI');
 N_mri   = sum(mriFlag);
 
-hrdFlag = ismember({segVolumeInfo.segtype},'Hard');
+hrdFlag = ismember({segVolumeInfo_kept.segtype},'Hard');
 N_hrd   = sum(hrdFlag);
 
-sftFlag = ismember({segVolumeInfo.segtype},'Soft');
+sftFlag = ismember({segVolumeInfo_kept.segtype},'Soft');
 N_sft   = sum(sftFlag);
 
 
@@ -51,15 +59,15 @@ CorrelationStruct(length(strfields)-2) = struct();
 
 %% iterate through labels
 
-for il=3:length(strfields)
+for il=5:length(strfields)
         
-    strctI = il-2;
+    strctI = il-4;
     
-    MRIsplot = [segVolumeInfo(mriFlag).(strfields{il})];
-    hardplot = [segVolumeInfo(hrdFlag).(strfields{il})];
-    hardCrct = [segVolumeInfo(hrdFlag).(strfields{il})]...
-        .*[segVolumeInfo(hrdFlag).volumeAdjustmentFactor];
-    softplot = [segVolumeInfo(sftFlag).(strfields{il})];
+    MRIsplot = [segVolumeInfo_kept(mriFlag).(strfields{il})];
+    hardplot = [segVolumeInfo_kept(hrdFlag).(strfields{il})];
+    hardCrct = [segVolumeInfo_kept(hrdFlag).(strfields{il})]...
+        .*[segVolumeInfo_kept(hrdFlag).volumeAdjustmentFactor];
+    softplot = [segVolumeInfo_kept(sftFlag).(strfields{il})];
     
     
     CorrelationStruct(strctI).Label = strfields{il};
