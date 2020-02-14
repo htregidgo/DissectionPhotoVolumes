@@ -9,15 +9,26 @@ clearvars
 PHOTO_RECON_HOME=getenv('PHOTO_RECON_HOME');
 
 figuresDir = fullfile(PHOTO_RECON_HOME,'figures');
-corltnsDir = fullfile(figuresDir,'correlations');
-
-if ~exist(corltnsDir,'dir')
-    mkdir(corltnsDir)
-end
 
 load(fullfile(figuresDir,'AdjustedCaseStats.mat'),'segVolumeInfo')
 
 strfields = fieldnames(segVolumeInfo);
+
+%% sort out cases to remove
+
+removalLevel = 2;
+
+removalFlag = (0<[segVolumeInfo.removaltype]) &...
+    ([segVolumeInfo.removaltype] <=removalLevel);
+
+segVolumeInfo_kept=segVolumeInfo(~removalFlag);
+
+corltnsDir = fullfile(figuresDir,'correlations',...
+    ['removalLevel_',num2str(removalLevel)]);
+
+if ~exist(corltnsDir,'dir')
+    mkdir(corltnsDir)
+end
 
 softdir = fullfile(corltnsDir,'soft');
 if ~exist(softdir,'dir')
@@ -33,15 +44,6 @@ crctdir = fullfile(corltnsDir,'hardCorrected');
 if ~exist(crctdir,'dir')
     mkdir(crctdir)
 end
-
-%% sort out cases to remove
-
-removalLevel = 2;
-
-removalFlag = (0<[segVolumeInfo.removaltype]) &...
-    ([segVolumeInfo.removaltype] <=removalLevel);
-
-segVolumeInfo_kept=segVolumeInfo(~removalFlag);
 
 %% setup variables
 

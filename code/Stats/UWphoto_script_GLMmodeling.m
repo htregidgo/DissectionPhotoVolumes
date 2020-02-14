@@ -10,6 +10,12 @@ figuresDir = fullfile(PHOTO_RECON_HOME,'figures');
 load(fullfile(figuresDir,'AdjustedCaseStats.mat'),'segVolumeInfo',...
     'matchedInfo')
 
+savedir = fullfile(figuresDir,'GLM');
+
+if ~exist(savedir,'dir')
+    mkdir(savedir)
+end
+
 
 %% sort out cases to remove
 % removalLevel 1 - missing volumes and Hemmorhage removed
@@ -24,6 +30,8 @@ removalFlag = (0<[segVolumeInfo.removaltype]) &...
 
 segVolumeInfo_kept=segVolumeInfo(~removalFlag);
 
+savepath = fullfile(savedir,['GLMresults_removalLevel_',...
+    num2str(removalLevel)]);
 
 %% get target demographics
 
@@ -441,7 +449,7 @@ end
 
 %% Save results
 
-
+save(savepath,'segVolumeInfo_kept','*_strct_*','Design_mat*','*resultsStruct')
 
 
 
