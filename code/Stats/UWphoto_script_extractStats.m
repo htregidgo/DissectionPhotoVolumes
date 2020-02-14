@@ -11,10 +11,11 @@ removecases = {'18-2102',... % missing volumes
     '18-1705',...% poor segmentation ventricles 
     '18-1754',...% poor segmentation ventricles
     '18-1343',...% poor segmentation deformation
-    '19-0138'... % poor segmentation cortex
+    '19-0138',...% poor segmentation cortex
+    '19-0100'... % very large ventricles (biasing)
     };
 
-removaltype = [1,1,1,1,2,2,3,3];
+removaltype = [1,1,1,1,2,2,3,3,4];
 
 removalnotes = {'missing volumes',...
     'missing volumes',...
@@ -23,7 +24,8 @@ removalnotes = {'missing volumes',...
     'poor segmentation ventricles',...
     'poor segmentation ventricles',...
     'poor segmentation deformation',...
-    'poor segmentation cortex'
+    'poor segmentation cortex',...
+    'very large ventricles (biasing)'
     };
 
 %% setup directories
