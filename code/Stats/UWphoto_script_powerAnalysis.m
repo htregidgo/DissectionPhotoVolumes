@@ -6,14 +6,16 @@ clear all
 %% load data
 removalLevel = 4;
 GLM_RESULTS = ['/home/acasamitjana/Data/UWphoto/PowerAnalysis/GLM/GLMresults_removalLevel_' num2str(removalLevel) '.mat'];
-load(GLM_RESULTS, 'MRI_GLM_resultsStruct', 'Hrd_GLM_resultsStruct', 'Sft_GLM_resultsStruct');
+load(GLM_RESULTS, 'MRI_GLM_resultsStruct', 'Hrd_GLM_resultsStruct', 'Sft_GLM_resultsStruct', 'Design_mat'); X=Design_mat; clear Design_mat;
 
 
 ALPHA = 0.05;
 POWER = 0.8;
 N_COVARIATES = 4;
+GAMMAX = inv(X'*X);
 
 %% MRI power analysis
+disp('MRI analysis')
 PA_MRI.ALPHA = ALPHA;
 PA_MRI.POWER = POWER;
 
@@ -25,10 +27,11 @@ MRI_col = zeros(length(volume_fields),1);
 for it_volume=1:length(volume_fields)
     stats = MRI_results.(volume_fields{it_volume}).stats;
     
-    effect_size = stats.beta(3);
-    standard_error = stats.se(3).*sqrt(N_MRI);
-    
-    [nout, tval, pval, power] = computeSampleSize(0, standard_error, effect_size, POWER, ALPHA, N_COVARIATES);
+    beta = stats.beta(3);
+    gammaX=GAMMAX(3,3);
+    sigma2 = sum(stats.resid.*stats.resid);
+     
+    [nout, tval, pval, power] = computeSampleSize(0, beta, sigma2, gammaX, N_COVARIATES, POWER, ALPHA);
     
     PA_MRI.full.(volume_fields{it_volume}).power = power;
     PA_MRI.full.(volume_fields{it_volume}).pval = pval;
@@ -47,6 +50,7 @@ for it_volume=1:length(volume_fields)
 end
 
 %% Hard power analysis
+disp('Hard analysis')
 PA_Hard.ALPHA = ALPHA;
 PA_Hard.POWER = POWER;
 
@@ -58,10 +62,11 @@ Hard_col = zeros(length(volume_fields),1);
 for it_volume=1:length(volume_fields)
     stats = Hard_results.(volume_fields{it_volume}).stats;
     
-    effect_size = stats.beta(3);
-    standard_error = stats.se(3).*sqrt(N_Hard);
-    
-    [nout, tval, pval, power] = computeSampleSize(0, standard_error, effect_size, POWER, ALPHA, N_COVARIATES);
+    beta = stats.beta(3);
+    gammaX=GAMMAX(3,3);
+    sigma2 = sum(stats.resid.*stats.resid);
+     
+    [nout, tval, pval, power] = computeSampleSize(0, beta, sigma2, gammaX, N_COVARIATES, POWER, ALPHA);
     
     PA_Hard.full.(volume_fields{it_volume}).power = power;
     PA_Hard.full.(volume_fields{it_volume}).pval = pval;
@@ -82,6 +87,7 @@ end
 
 
 %% Soft power analysis
+disp('Soft analysis')
 PA_Soft.ALPHA = ALPHA;
 PA_Soft.POWER = POWER;
 
@@ -93,11 +99,14 @@ Soft_col = zeros(length(volume_fields),1);
 for it_volume=1:length(volume_fields)
     stats = Soft_results.(volume_fields{it_volume}).stats;
     
-    effect_size = stats.beta(3);
-    standard_error = stats.se(3).*sqrt(N_Soft);
-    
-    
-    [nout, tval, pval, power] = computeSampleSize(0, standard_error, effect_size, POWER, ALPHA, N_COVARIATES);
+%     if strcmp(volume_fields{it_volume}, 'Average_Amygdala')
+%         pause(0.1)
+%     end
+    beta = stats.beta(3);
+    gammaX=GAMMAX(3,3);
+    sigma2 = sum(stats.resid.*stats.resid);
+     
+    [nout, tval, pval, power] = computeSampleSize(0, beta, sigma2, gammaX, N_COVARIATES, POWER, ALPHA);
     
     PA_Soft.full.(volume_fields{it_volume}).power = power;
     PA_Soft.full.(volume_fields{it_volume}).pval = pval;
@@ -145,6 +154,7 @@ ylabel('Sample size')
 xticklabels(INTERESTING_VOLUMES_PLOT)
 xtickangle(90)
 legend('MRI', 'Hard', 'Soft')
+title(['Power analysis: removal level ' num2str(removalLevel)])
 
 % % Full table
 % T = table(MRI_col,Hard_col,Soft_col, 'RowNames', volume_fields );
