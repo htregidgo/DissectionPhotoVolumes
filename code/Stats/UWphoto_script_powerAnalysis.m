@@ -135,15 +135,19 @@ INTERESTING_VOLUMES_PLOT = {'Cerebral-White-Matter', 'Cerebral-Cortex', 'Lateral
 
 
 % Interesting table
-MRI_interesting_col = zeros(length(INTERESTING_VOLUMES), 1);
-Soft_interesting_col = zeros(length(INTERESTING_VOLUMES), 1);
-Hard_interesting_col = zeros(length(INTERESTING_VOLUMES), 1);
+MRI_interesting_col = zeros(length(INTERESTING_VOLUMES), 4);
+Soft_interesting_col = zeros(length(INTERESTING_VOLUMES), 4);
+Hard_interesting_col = zeros(length(INTERESTING_VOLUMES), 4);
 for it_interesting=1:length(INTERESTING_VOLUMES)
-    MRI_interesting_col(it_interesting) = PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size;
-    Soft_interesting_col(it_interesting) = PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size;
-    Hard_interesting_col(it_interesting) = PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size;
+    MRI_interesting_col(it_interesting,:) = [PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).tval PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
+    Soft_interesting_col(it_interesting,:) = [PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).tval PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
+    Hard_interesting_col(it_interesting,:) = [PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).tval PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
 end
-Tint = table(MRI_interesting_col,Hard_interesting_col,Soft_interesting_col, 'RowNames', INTERESTING_VOLUMES );
+TMRI = table(MRI_interesting_col(:,1),MRI_interesting_col(:,2),MRI_interesting_col(:,3),MRI_interesting_col(:,4), 'VariableNames', {'SampleSize','Tval','Pval','Power'});
+TSOFT = table(Soft_interesting_col(:,1),Soft_interesting_col(:,2),Soft_interesting_col(:,3),Soft_interesting_col(:,4), 'VariableNames', {'SampleSize','Tval','Pval','Power'});
+THARD = table(Hard_interesting_col(:,1),Hard_interesting_col(:,2),Hard_interesting_col(:,3),Hard_interesting_col(:,4), 'VariableNames', {'SampleSize','Tval','Pval','Power'});
+TintComplete = table(TMRI,TSOFT,THARD, 'RowNames', INTERESTING_VOLUMES);
+Tint = table(MRI_interesting_col(:,1),Soft_interesting_col(:,1),Hard_interesting_col(:,1), 'RowNames', INTERESTING_VOLUMES, 'VariableNames', {'MRI','Soft','Hard'} );
 
 figure
 plot(MRI_interesting_col,'b'), hold on
