@@ -4,8 +4,8 @@
 clear all
 
 %% load data
-removalLevel = 4;
-GLM_RESULTS = ['/home/acasamitjana/Data/UWphoto/PowerAnalysis/GLM/GLMresults_removalLevel_' num2str(removalLevel) '.mat'];
+removalLevel = 1;
+GLM_RESULTS = ['/home/acasamitjana/Data/UWphoto/PowerAnalysis/GLM/GLMresults_removalLevel_' num2str(removalLevel) '_new.mat'];
 load(GLM_RESULTS, 'MRI_GLM_resultsStruct', 'Hrd_GLM_resultsStruct', 'Sft_GLM_resultsStruct', 'Design_mat'); X=Design_mat; clear Design_mat;
 
 

@@ -3,12 +3,12 @@
 
 %% load data
 
-PHOTO_RECON_HOME=getenv('PHOTO_RECON_HOME');
+PHOTO_RECON_HOME='/home/acasamitjana/Results';%getenv('PHOTO_RECON_HOME');
 
 figuresDir = fullfile(PHOTO_RECON_HOME,'figures');
 
-load(fullfile(figuresDir,'AdjustedCaseStats.mat'),'segVolumeInfo',...
-    'matchedInfo')
+% load(fullfile(figuresDir,'AdjustedCaseStats.mat'),'segVolumeInfo',...
+%     'matchedInfo')
 
 savedir = fullfile(figuresDir,'GLM');
 
@@ -23,7 +23,7 @@ end
 % removalLevel 3 - poor segmentations and defformation 
 % removalLevel 4 - biasing ventricle volumes
 
-removalLevel = 4;
+removalLevel = 1;
 
 removalFlag = (0<[segVolumeInfo.removaltype]) &...
     ([segVolumeInfo.removaltype] <=removalLevel);
@@ -321,6 +321,15 @@ end
 
 % remove column for gender due to lack of female controls
 Design_mat_maleOnly=Design_mat(N_fd+1:end,[1,3,4]);
+
+
+% Orthogonal designmat
+Design_mat = gsog(Design_mat);
+
+
+% Orthogonal designmat_male
+Design_mat_maleOnly = gsog(Design_mat_maleOnly);
+
 
 %% run model
 % not going to use volume corrections at the moment because I'm not sure
