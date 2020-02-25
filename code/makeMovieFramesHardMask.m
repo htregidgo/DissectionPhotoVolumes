@@ -8,13 +8,15 @@ clear
 clc
 
 % a directory with .tif / .mat pairs with the photos and segmentations
-inputPhotoDir='/autofs/cluster/vive/UW_photo_recon/Photo_data/18-1132/18-1132 MATLAB/';
+% inputPhotoDir='/autofs/cluster/vive/UW_photo_recon/Photo_data/18-1132/18-1132 MATLAB/';
+inputPhotoDir='/home/henry/Documents/Brain/UWphoto/Photo_data_updated/18-1132/18-1132 MATLAB/';
 % a reference binary mask volume, in correct anatomical orientation. You can use ../FLAIR_Scan_Data/*.rotated.mask.mgz.
-inputREFERENCE='/autofs/cluster/vive/UW_photo_recon/FLAIR_Scan_Data/NP18_1132.rotated.mask.mgz';
+% inputREFERENCE='/autofs/cluster/vive/UW_photo_recon/FLAIR_Scan_Data/NP18_1132.rotated.mask.mgz';
+inputREFERENCE='/home/henry/Documents/Brain/UWphoto/FLAIR_Scan_Data/MaskComparison/NP18_1132/NP18_1132.rotated.ventCrctd.binary.mgz';
 % output directory with movie files
-outputMovieDir='/autofs/cluster/vive/UW_photo_recon/recons/outputsHardAtlasBin/18-1132_movie/';
+outputMovieDir='/home/henry/Documents/Brain/UWphoto/figures/Movies/18-1132/';
 % The mat file written by ReconPhotoVolume_joint_hard_multires.m
-matFile='/autofs/cluster/vive/UW_photo_recon/recons/outputsHardAtlasBin/18-1132.mat';
+matFile='/home/henry/Documents/Brain/UWphoto/Results_hard/18-1132/18-1132.hard.mat';
 % final resolution used in ReconPhotoVolume_joint_hard_multires.m
 TARGET_RES=0.5;
 % the path to the matlab directory of your freesurfer distrbution, i.e., $FREESURFER_HOME/matlab
@@ -26,10 +28,16 @@ SLICE_THICKNESS=4;
 
 %%%%%%%%%%%%%
 
-addpath([pwd() '/functions']);
-addpath(FS_MATLAB_PATH);
+% Number of pre/post slices to add at the photo stack
+Nphotos_pre = 2;
+Nphotos_post = 2;
 
-%%%%%%%%%%%%%%
+%%%%%%%%%%%%%
+% 
+% addpath([pwd() '/functions']);
+% addpath(FS_MATLAB_PATH);
+% 
+% %%%%%%%%%%%%%%
 
 if exist(outputMovieDir,'dir')==0
     mkdir(outputMovieDir);
@@ -40,9 +48,13 @@ end
 disp('Extracting slices from photographs')
 d=dir([inputPhotoDir '/*.mat']);
 Nphotos=length(d);
-I=[];
-M=[];
+Iorig=[];
+Morig=[];
 grouping=[]; % I don't use it right now, but maybe in the future...
+for n=1:Nphotos_pre
+    Iorig{end+1}=zeros(3,1);
+    Morig{end+1}=1;
+end
 for n=1:Nphotos
     X=imread([inputPhotoDir '/' d(n).name(1:end-4) '.tif']);
     load([inputPhotoDir '/' d(n).name(1:end)],'LABELS'); Y=LABELS; clear LABELS
@@ -53,36 +65,64 @@ for n=1:Nphotos
         cropping(3)=1; cropping(6)=3;
         image=applyCropping(X,cropping);
         image(repmat(mask,[1 1 3])==0)=0;
-        I{end+1}=image;
-        M{end+1}=mask;
+        Iorig{end+1}=image;
+        Morig{end+1}=mask;
     end
+end
+for n=1:Nphotos_post
+    Iorig{end+1}=zeros(3,1);
+    Morig{end+1}=1;
 end
 
 %%%%%%%%%%%%%%%
 
+Nscales = length(TARGET_RES);
+Nslices=length(Iorig);
+if exist([inputPhotoDir filesep '..' filesep 'slice_order.mat'])
+    load([inputPhotoDir filesep '..' filesep 'slice_order.mat'], 'slice_order');
+    slice_order = [1:Nphotos_pre slice_order+Nphotos_pre slice_order(end)+Nphotos_pre+1:slice_order(end)+Nphotos_pre+Nphotos_post];
+else
+    slice_order = 1:Nslices;
+end
+
+I=[];
+M=[];
 disp(['Resampling to target resolution: ' num2str(TARGET_RES) ' mm']);
-Nslices=length(I);
+Nslices=length(Iorig);
 for n=1:Nslices
-    I{n}=imresize(I{n},PHOTO_RES/TARGET_RES);
-    M{n}=imdilate(imresize(double(M{n}),PHOTO_RES/TARGET_RES)>0.5,strel('disk',2/TARGET_RES));
+    n_ordered = slice_order(n);
+    I{n}=imresize(Iorig{n_ordered},PHOTO_RES/TARGET_RES);
+%     M{n}=imdilate(imresize(double(M{n}),PHOTO_RES/TARGET_RES)>0.5,strel('disk',2/TARGET_RES));
+    M{n}=imresize(double(Morig{n_ordered}),PHOTO_RES/TARGET_RES)>0.5;
     I{n}(M{n}==0)=0;
+    if length(size(I{n})) < 3
+        I{n} = zeros(3,1);
+    end
 end
 
 %%%%%%%%%%%%%%%%%
 
 disp('Coarse alignment and padding');
 % find COGs of the masks
+Imri=[];
+Mmri=[];
 cogs=zeros(Nslices,2);
 for n=1:Nslices
     [r,c]=find(M{n});
-    cogs(n,1)=round(mean(r));
-    cogs(n,2)=round(mean(c));
+    if isempty(r)
+        cogs(n,1)=1;
+        cogs(n,2)=1;
+    else
+        cogs(n,1)=round(mean(r));
+        cogs(n,2)=round(mean(c));
+    end
 end
+
 semiLen = round(1.4 * max(cogs));
 siz=1+2*semiLen;
 Imri=[];
 Imri.volres=[TARGET_RES TARGET_RES SLICE_THICKNESS];
-Imri.vox2ras0=[TARGET_RES 0 0 0; 0 0 -SLICE_THICKNESS 0; 0 -TARGET_RES 0 0; 0 0 0 1];
+Imri.vox2ras0=[-TARGET_RES 0 0 0; 0 0 -SLICE_THICKNESS 0; 0 -TARGET_RES 0 0; 0 0 0 1];
 Imri.vol=zeros([siz Nslices 3]);
 Mmri=Imri;
 Mmri.vol=zeros([siz Nslices]);
@@ -92,6 +132,7 @@ for n=1:Nslices
     Imri.vol(idx1(1):idx2(1),idx1(2):idx2(2),n,:)=reshape(I{n},[size(M{n}) 1 3]);
     Mmri.vol(idx1(1):idx2(1),idx1(2):idx2(2),n)=M{n};
 end
+
 
 %%%%%%%%%%%%%%%%%%%%%
 REFmri=MRIread(inputREFERENCE);
