@@ -9,14 +9,14 @@ clc
 
 % a directory with .tif / .mat pairs with the photos and segmentations
 % inputPhotoDir='/autofs/cluster/vive/UW_photo_recon/Photo_data/18-1132/18-1132 MATLAB/';
-inputPhotoDir='/home/henry/Documents/Brain/UWphoto/Photo_data_updated/18-1132/18-1132 MATLAB/';
+inputPhotoDir='/home/henry/Documents/Brain/UWphoto/Photo_data_updated/17-0333/17-0333 MATLAB/';
 % a reference binary mask volume, in correct anatomical orientation. You can use ../FLAIR_Scan_Data/*.rotated.mask.mgz.
 % inputREFERENCE='/autofs/cluster/vive/UW_photo_recon/FLAIR_Scan_Data/NP18_1132.rotated.mask.mgz';
-inputREFERENCE='/home/henry/Documents/Brain/UWphoto/FLAIR_Scan_Data/MaskComparison/NP18_1132/NP18_1132.rotated.ventCrctd.binary.mgz';
+inputREFERENCE='/home/henry/Documents/Brain/UWphoto/FLAIR_Scan_Data/MaskComparison/NP17_0333/NP17_0333.rotated.ventCrctd.binary.mgz';
 % output directory with movie files
-outputMovieDir='/home/henry/Documents/Brain/UWphoto/figures/Movies/18-1132/';
+outputMovieDir='/home/henry/Documents/Brain/UWphoto/figures/Movies/17-0333/';
 % The mat file written by ReconPhotoVolume_joint_hard_multires.m
-matFile='/home/henry/Documents/Brain/UWphoto/Results_hard/18-1132/18-1132.hard.mat';
+matFile='/home/henry/Documents/Brain/UWphoto/Results_hard/17-0333/17-0333.hard.mat';
 % final resolution used in ReconPhotoVolume_joint_hard_multires.m
 TARGET_RES=0.5;
 % the path to the matlab directory of your freesurfer distrbution, i.e., $FREESURFER_HOME/matlab
@@ -118,6 +118,18 @@ for n=1:Nslices
     end
 end
 
+unalign=zeros(Nslices,2);
+for n=1:Nslices
+    [r,c]=find(true(size(M{n})));
+    if isempty(r)
+        unalign(n,1)=1;
+        unalign(n,2)=1;
+    else
+        unalign(n,1)=round(mean(r));
+        unalign(n,2)=round(mean(c));
+    end
+end
+
 semiLen = round(1.4 * max(cogs));
 siz=1+2*semiLen;
 Imri=[];
@@ -126,11 +138,21 @@ Imri.vox2ras0=[-TARGET_RES 0 0 0; 0 0 -SLICE_THICKNESS 0; 0 -TARGET_RES 0 0; 0 0
 Imri.vol=zeros([siz Nslices 3]);
 Mmri=Imri;
 Mmri.vol=zeros([siz Nslices]);
+Umri=Imri;
 for n=1:Nslices
     idx1=semiLen-cogs(n,:);
     idx2=idx1+size(M{n})-1;
+    
+    if (n>3 && unalign(n,1)~=1)
+        idx4=idx3+size(M{n})-1;
+    else
+        idx3=semiLen-unalign(n,:);
+        idx4=idx3+size(M{n})-1;
+    end
+    
     Imri.vol(idx1(1):idx2(1),idx1(2):idx2(2),n,:)=reshape(I{n},[size(M{n}) 1 3]);
     Mmri.vol(idx1(1):idx2(1),idx1(2):idx2(2),n)=M{n};
+    Umri.vol(idx3(1):idx4(1),idx3(2):idx4(2),n,:)=reshape(I{n},[size(M{n}) 1 3]);
 end
 
 
@@ -170,6 +192,7 @@ system('mri_mc /tmp/kk2.mgz 1 /tmp/kk >/dev/null');
 system(['mris_smooth -nw /tmp/kk ' outputMovieDir '/REF_frame_' num2str(fn,'%.4d') '.surf >/dev/null']);
 
 MRIwrite(Imri,[outputMovieDir '/SL_frame_' num2str(fn,'%.4d') '.mgz']);
+MRIwrite(Umri,[outputMovieDir '/SL_frame_' num2str(0,'%.4d') '.mgz']);
 
 MRIwrite(Mmri,'/tmp/kk.mgz'); system(['mri_convert /tmp/kk.mgz /tmp/kk2.mgz --voxsize 1.5 1.5 ' num2str(factor) ' -odt float -rt nearest >/dev/null']);
 mri=MRIread('/tmp/kk2.mgz'); for z=1:size(mri.vol,3), mri.vol(:,:,z)=ceil((z+factor/2)/factor)*mri.vol(:,:,z); end;
