@@ -38,7 +38,7 @@
 
 function ReconPhotoVolume_joint_multires(inputPhotoDir,inputREFERENCE,outputVol,...
     outputVolMask,outputWarpedRef,outputMat,PHOTO_RES,SLICE_THICKNESS,...
-    TARGET_RES,scheduleITs,FS_MATLAB_PATH)
+    TARGET_RES,scheduleITs)
 
 % clear
 % clc
@@ -86,11 +86,6 @@ Nphotos_post = 2;
 
 tic
 
-%%%%%%%%%%%%%
-
-addpath(FS_MATLAB_PATH);
-addpath([fileparts(mfilename('fullpath')) filesep 'functions/lbfgsb3.0_mex1.2/']);
-addpath([fileparts(mfilename('fullpath')) filesep 'functions']);
 
 %%%%%%%%%%%%%%
 if strcmp(outputWarpedRef(end-3:end),'.mgz')==0
@@ -244,6 +239,9 @@ cogPH=sum((rasPH.*repmat(Mmri{Nscales}.vol(:)',[3 1])),2)/sum(Mmri{Nscales}.vol(
 
 REFmri.vox2ras0(1:3,4)=REFmri.vox2ras0(1:3,4)+cogPH-cogREF;
 
+
+cogREF_new = cogPH;
+
 % Let's go
 Nims=size(Imri{1}.vol,3);
 Ngroups=Nphotos;
@@ -272,6 +270,87 @@ for mode=1:3
             
             if mode==1 % in first mode, simply take all zero (easy!)
                 opts.x0=zeros([3*Nims+7,1]);
+                % For the reference volume
+                              
+                
+                voxref = (REFmri.vox2ras0 \ Imri{Nscales}.vox2ras0) * ...
+                    [JJph{Nscales}(:)'-1;  IIph{Nscales}(:)'-1;...
+                    KKph{Nscales}(:)'-1; ones(1,numel(IIph{Nscales}))];
+                voxref=voxref([2 1 3],:)+1;
+                refvals=interpn(REFmri.vol,voxref(1,:),voxref(2,:),voxref(3,:));
+                refvals=reshape(refvals,size(IIph{Nscales}));
+                refvals(isnan(refvals))=0;
+                
+                weighted_ii = refvals.*IIph{Nscales};
+                weighted_jj = refvals.*JJph{Nscales};
+                
+                ref_slice_cog_ii = squeeze(sum(weighted_ii,[1,2])./sum(refvals,[1,2]));
+                ref_slice_cog_jj = squeeze(sum(weighted_jj,[1,2])./sum(refvals,[1,2]));
+                
+                for il = 1:length(ref_slice_cog_ii)
+                    if isnan(ref_slice_cog_ii(il))
+                        if il<length(ref_slice_cog_ii)/2
+                            replace_ind = find(~isnan(ref_slice_cog_ii(il+1:end)),...
+                                1,'first');
+                            ref_slice_cog_ii(il)=ref_slice_cog_ii(il+replace_ind);
+                        else
+                            replace_ind = find(~isnan(ref_slice_cog_ii(1:il-1)),...
+                                1,'last');
+                            ref_slice_cog_ii(il)=ref_slice_cog_ii(replace_ind);
+                        end
+                    end
+                    if isnan(ref_slice_cog_jj(il))
+                        if il<length(ref_slice_cog_jj)/2
+                            replace_ind = find(~isnan(ref_slice_cog_jj(il+1:end)),...
+                                1,'first');
+                            ref_slice_cog_jj(il)=ref_slice_cog_jj(il+replace_ind);
+                        else
+                            replace_ind = find(~isnan(ref_slice_cog_jj(1:il-1)),...
+                                1,'last');
+                            ref_slice_cog_jj(il)=ref_slice_cog_jj(replace_ind);
+                        end
+                    end
+                end
+                
+                weighted_ii = Mmri{Nscales}.vol.*IIph{Nscales};
+                weighted_jj = Mmri{Nscales}.vol.*JJph{Nscales};
+                
+                mask_slice_cog_ii = squeeze(sum(weighted_ii,[1,2])...
+                    ./sum(Mmri{Nscales}.vol,[1,2]));
+                mask_slice_cog_jj = squeeze(sum(weighted_jj,[1,2])...
+                    ./sum(Mmri{Nscales}.vol,[1,2]));
+                
+                
+                for il = 1:length(mask_slice_cog_ii)
+                    if isnan(mask_slice_cog_ii(il))
+                        if il<length(mask_slice_cog_ii)/2
+                            replace_ind = find(~isnan(mask_slice_cog_ii(il+1:end)),...
+                                1,'first');
+                            mask_slice_cog_ii(il)=mask_slice_cog_ii(il+replace_ind);
+                        else
+                            replace_ind = find(~isnan(mask_slice_cog_ii(1:il-1)),...
+                                1,'last');
+                            mask_slice_cog_ii(il)=mask_slice_cog_ii(replace_ind);
+                        end
+                    end
+                    if isnan(mask_slice_cog_jj(il))
+                        if il<length(mask_slice_cog_jj)/2
+                            replace_ind = find(~isnan(mask_slice_cog_jj(il+1:end)),...
+                                1,'first');
+                            mask_slice_cog_jj(il)=mask_slice_cog_jj(il+replace_ind);
+                        else
+                            replace_ind = find(~isnan(mask_slice_cog_jj(1:il-1)),...
+                                1,'last');
+                            mask_slice_cog_jj(il)=mask_slice_cog_jj(replace_ind);
+                        end
+                    end
+                end
+                
+                
+                opts.x0(2:3:end-7) = -(ref_slice_cog_ii-mask_slice_cog_ii)...
+                    /TARGET_RES(s)*TARGET_RES(Nscales);
+                opts.x0(3:3:end-7) = -(ref_slice_cog_jj-mask_slice_cog_jj)...
+                    /TARGET_RES(s)*TARGET_RES(Nscales);
                 
             elseif mode==2 % in mode 2, we need to move from ref-similarity to ref-affine
                 
@@ -340,7 +419,7 @@ for mode=1:3
         n=length(opts.x0);
         u = Inf*ones(n,1);
         l = -u;
-        [x,~,info] = lbfgsb(  @(p)costFun(p,cogREF,REFmri,Imri{s},Mmri{s},...
+        [x,~,info] = lbfgsb(  @(p)costFun(p,cogREF_new,REFmri,Imri{s},Mmri{s},...
             IIph{s},JJph{s},KKph{s},REL_NCC_INTRA_WEIGHT,REL_DICE_INTRA_WEIGHT,...
             REL_DICE_INTER_WEIGHT,REL_DETERMINANT_COST,mode),l, u, opts );
         
@@ -368,7 +447,7 @@ end
 
 disp('Optimization done!');
 [~,~, warpedPhotos, warpedMasks, REFvox2ras0New] = ...
-    costFun(x,cogREF,REFmri,Imri{Nscales},Mmri{Nscales},IIph{Nscales},JJph{Nscales},KKph{Nscales},...
+    costFun(x,cogREF_new,REFmri,Imri{Nscales},Mmri{Nscales},IIph{Nscales},JJph{Nscales},KKph{Nscales},...
     REL_NCC_INTRA_WEIGHT,REL_DICE_INTRA_WEIGHT,REL_DICE_INTER_WEIGHT,...
     REL_DETERMINANT_COST, mode);
 

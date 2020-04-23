@@ -61,15 +61,6 @@ if isempty(FREESURFER_HOME)
     setenv('FREESURFER_HOME',FREESURFER_HOME)
 end
 
-% freesurfer matlab paths
-FS_MATLAB_PATH ='~/Documents/Brain/Freesurfer/freesurfer/matlab/';
-if ~exist(FS_MATLAB_PATH,'dir')
-    FS_MATLAB_PATH=uigetdir(pwd,'Freesurfer directory');
-    
-    if isequal(0,FS_MATLAB_PATH)
-        error('freesurfer matlab directory not set')
-    end
-end
 
 % resolutions and scheduling
 PHOTO_RES = 0.1;
@@ -80,7 +71,7 @@ scheduleITs = [50 40 30; 25 20 15; 12 10 8; 6 5 5];
 
 % define I/O
 
-topPhotoDir = '/home/henry/Documents/Brain/UWphoto/Photo_data_updated';
+topPhotoDir = '';
 if ~exist(topPhotoDir,'dir')
     topPhotoDir=uigetdir(pwd,'Top level photo directory');
     
@@ -91,7 +82,7 @@ end
 
 dlist_cases = dir(fullfile(topPhotoDir,'*/*MATLAB')); % list cases
 
-topOutDir = '/home/henry/Documents/Brain/UWphoto/Results';
+topOutDir = '';
 if ~exist(topOutDir,'dir')
     topOutDir=uigetdir(pwd,'Top level results directory');
     
@@ -100,13 +91,13 @@ if ~exist(topOutDir,'dir')
     end
 end
 
-inputREFERENCE = '/home/henry/Documents/Brain/UWphoto/prob_atlases/onlyCerebrum.smoothed.nii.gz';
+inputREFERENCE = '';
 if ~exist(inputREFERENCE,'file')
     PHOTO_RECON_HOME = getenv('PHOTO_RECON_HOME');
     
     if ~isempty(PHOTO_RECON_HOME)
         inputREFERENCE = fullfile(PHOTO_RECON_HOME,'prob_atlases',...
-            'onlyCerebrum.smoothed.nii.gz');
+            'left_onlyCerebrum.smoothed.nii.gz');
     end
     if ~exist(inputREFERENCE,'file')
         
@@ -123,7 +114,7 @@ problems_flag = true(size(dlist_cases));
 
 %% iterate through cases
 
-for il = 1:length(dlist_cases)
+for il = 1:(length(dlist_cases)-1)
     
     [~,caseID,~] = fileparts(dlist_cases(il).folder);
     inputPhotoDir = fullfile(dlist_cases(il).folder,dlist_cases(il).name);
@@ -143,7 +134,7 @@ for il = 1:length(dlist_cases)
         if forceFlag || ~exist(outputVol,'file')
             ReconPhotoVolume_joint_multires(inputPhotoDir,inputREFERENCE,outputVol,...
                 outputVolMask,outputWarpedRef,outputMat,PHOTO_RES,SLICE_THICKNESS,...
-                TARGET_RES,scheduleITs,FS_MATLAB_PATH)
+                TARGET_RES,scheduleITs)
             
         end
         
