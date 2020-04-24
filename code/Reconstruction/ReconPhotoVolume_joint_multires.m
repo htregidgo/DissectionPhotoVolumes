@@ -38,7 +38,7 @@
 
 function ReconPhotoVolume_joint_multires(inputPhotoDir,inputREFERENCE,outputVol,...
     outputVolMask,outputWarpedRef,outputMat,PHOTO_RES,SLICE_THICKNESS,...
-    TARGET_RES,scheduleITs)
+    TARGET_RES,scheduleITs,varargin)
 
 % clear
 % clc
@@ -62,6 +62,36 @@ function ReconPhotoVolume_joint_multires(inputPhotoDir,inputREFERENCE,outputVol,
 % FS_MATLAB_PATH='/usr/local/freesurfer/dev/matlab';
 %
 
+%% input parsing
+
+p=inputParser;
+
+addRequired(p,'inputPhotoDir',@(x) ischar(x) && exist(x,'dir'))
+addRequired(p,'inputREFERENCE',@(x) ischar(x) && exist(x,'file') &&...
+    endsWith(x,{'.mgz','.nii','.nii.gz'}))
+addRequired(p,'outputVol',@(x) parse_output_path(x,true))
+addRequired(p,'outputVolMask',@(x) parse_output_path(x,true))
+addRequired(p,'outputWarpedRef',@(x) parse_output_path(x,true))
+addRequired(p,'outputMat',@(x) parse_output_path(x,false))
+addRequired(p,'PHOTO_RES',@(x) isnumeric(x) && x>0 && isscalar(x) &&...
+    isreal(x) && isfinite(x))
+addRequired(p,'SLICE_THICKNESS',@(x) isnumeric(x) && x>0 && isscalar(x) &&...
+    isreal(x) && isfinite(x))
+addRequired(p,'TARGET_RES',@(x) isnumeric(x) && isvector(x) && all(x>0) &&...
+    all(isfinite(x)) && all(x(1:end-1)-x(2:end)>0) &&...
+    length(x)==size(scheduleITs,1) && isreal(x))
+addRequired(p,'scheduleITs',@(x) isnumeric(x) && all(x(:)>0) &&...
+    all(isfinite(x(:))) && isreal(x) && isequal(x,floor(x)) && size(x,2)==3)
+addParameter(p,'APswitch','Anterior', @(x) strcmpi(x,{'Anterior','Posterior'}))
+
+parse(p,inputPhotoDir,inputREFERENCE,outputVol,...
+    outputVolMask,outputWarpedRef,outputMat,PHOTO_RES,SLICE_THICKNESS,...
+    TARGET_RES,scheduleITs,varargin{:})
+
+APswitch = strcmpi(p.Results.APswitch,'Anterior');
+
+%% setup optimisation parameters
+
 %%%%%
 
 REL_DICE_INTER_WEIGHT = 10; % 50;  % mask of reference to mask of photo
@@ -83,6 +113,7 @@ Nphotos_pre = 2;
 Nphotos_post = 2;
 
 %%%%%%%%%%%%%
+%% start
 
 tic
 
@@ -172,7 +203,13 @@ semiLen = round(1.4 * max(cogs));
 siz=1+2*semiLen;
 Imri{Nscales}=[];
 Imri{Nscales}.volres=[TARGET_RES(Nscales) TARGET_RES(Nscales) SLICE_THICKNESS];
-Imri{Nscales}.vox2ras0=[-TARGET_RES(Nscales) 0 0 0; 0 0 -SLICE_THICKNESS 0; 0 -TARGET_RES(Nscales) 0 0; 0 0 0 1];
+if APswitch
+    Imri{Nscales}.vox2ras0=[-TARGET_RES(Nscales) 0 0 0;...
+        0 0 -SLICE_THICKNESS 0; 0 -TARGET_RES(Nscales) 0 0; 0 0 0 1];
+else 
+    Imri{Nscales}.vox2ras0=[TARGET_RES(Nscales) 0 0 0;...
+        0 0 -SLICE_THICKNESS 0; 0 -TARGET_RES(Nscales) 0 0; 0 0 0 1];
+end
 Imri{Nscales}.vol=zeros([siz Nslices 3]);
 Mmri{Nscales}=Imri{Nscales};
 Mmri{Nscales}.vol=zeros([siz Nslices]);
@@ -466,5 +503,26 @@ disp('All done!');
 toc
 
 
+end
 
+
+%% local functions
+
+function isvalid = parse_output_path(fpath,volumeSwitch)
+
+if ~ischar(fpath)
+    isvalid = false;
+    return
+end
+
+[outputpath,~,~] = fileparts(fpath);
+
+if volumeSwitch
+    isvalid = endsWith(fpath,{'.mgz','.nii','.nii.gz'}) &&...
+        exist(outputpath,'dir');
+else
+    isvalid = endsWith(fpath,'.mat') && exist(outputpath,'dir');
+end
+
+end
 
