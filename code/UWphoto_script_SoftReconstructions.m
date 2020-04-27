@@ -139,6 +139,8 @@ for il = 1:(length(dlist_cases))
     [~,caseID,~] = fileparts(dlist_cases(il).folder);
     inputPhotoDir = fullfile(dlist_cases(il).folder,dlist_cases(il).name);
     
+    caseID = strtrim(caseID);
+    
     outputDir = fullfile(topOutDir,caseID,'soft');
     
     if ~exist(outputDir,'dir')
