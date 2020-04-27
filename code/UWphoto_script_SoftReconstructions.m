@@ -84,7 +84,7 @@ dlist_cases = dir(fullfile(topPhotoDir,'*/*MATLAB')); % list cases
 
 topOutDir = '';
 if ~exist(topOutDir,'dir')
-    topOutDir=uigetdir(pwd,'Top level results directory');
+    topOutDir=uigetdir(topPhotoDir,'Top level results directory');
     
     if isequal(0,topOutDir)
         error('top level results directory not set')
@@ -96,8 +96,21 @@ if ~exist(inputREFERENCE,'file')
     PHOTO_RECON_HOME = getenv('PHOTO_RECON_HOME');
     
     if ~isempty(PHOTO_RECON_HOME)
-        inputREFERENCE = fullfile(PHOTO_RECON_HOME,'prob_atlases',...
-            'left_onlyCerebrum.smoothed.nii.gz');
+        
+        HemiType = questdlg('Which hemisphere is present in the images?',...
+            'Hemisphere selection','Left','Right','Both','Both');
+        
+        switch HemiType
+            case 'Right'
+                inputREFERENCE = fullfile(PHOTO_RECON_HOME,'prob_atlases',...
+                    'right_onlyCerebrum.smoothed.nii.gz');
+            case 'Left'
+                inputREFERENCE = fullfile(PHOTO_RECON_HOME,'prob_atlases',...
+                    'left_onlyCerebrum.smoothed.nii.gz');
+            otherwise
+                inputREFERENCE = fullfile(PHOTO_RECON_HOME,'prob_atlases',...
+                    'onlyCerebrum.smoothed.nii.gz');
+        end
     end
     if ~exist(inputREFERENCE,'file')
         
@@ -109,6 +122,10 @@ if ~exist(inputREFERENCE,'file')
         end
     end
 end
+
+viewpoint = questdlg('Is the anterior or posterior side of the slice showing?',...
+    'Viewpoint selection','Anterior','Posterior','Posterior');
+
 
 problems_flag = true(size(dlist_cases));
 
@@ -134,7 +151,7 @@ for il = 1:(length(dlist_cases)-1)
         if forceFlag || ~exist(outputVol,'file')
             ReconPhotoVolume_joint_multires(inputPhotoDir,inputREFERENCE,outputVol,...
                 outputVolMask,outputWarpedRef,outputMat,PHOTO_RES,SLICE_THICKNESS,...
-                TARGET_RES,scheduleITs)
+                TARGET_RES,scheduleITs,'APswitch',viewpoint)
             
         end
         
