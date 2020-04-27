@@ -40,8 +40,11 @@
 
 %% initialise required variables
 
-% flag to force recalculation
-forceFlag = false;
+% flag to force recalculation set to true if you want to replace existing
+% reconstructions
+if ~exist('forceFlag','var')
+    forceFlag = false;
+end
 
 % freesurfer home
 FREESURFER_HOME = getenv('FREESURFER_HOME');
