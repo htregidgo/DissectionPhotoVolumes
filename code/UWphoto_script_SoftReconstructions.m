@@ -131,7 +131,7 @@ problems_flag = true(size(dlist_cases));
 
 %% iterate through cases
 
-for il = 1:(length(dlist_cases)-1)
+for il = 1:(length(dlist_cases))
     
     [~,caseID,~] = fileparts(dlist_cases(il).folder);
     inputPhotoDir = fullfile(dlist_cases(il).folder,dlist_cases(il).name);
