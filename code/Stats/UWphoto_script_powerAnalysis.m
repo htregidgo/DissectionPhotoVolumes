@@ -4,7 +4,7 @@
 clear all
 
 %% load data
-removalLevel = 1;
+removalLevel = 4;
 GLM_RESULTS = ['/home/acasamitjana/Data/UWphoto/PowerAnalysis/GLM/GLMresults_removalLevel_' num2str(removalLevel) '_new.mat'];
 load(GLM_RESULTS, 'MRI_GLM_resultsStruct', 'Hrd_GLM_resultsStruct', 'Sft_GLM_resultsStruct', 'Design_mat'); X=Design_mat; clear Design_mat;
 
@@ -36,14 +36,9 @@ for it_volume=1:length(volume_fields)
     PA_MRI.full.(volume_fields{it_volume}).power = power;
     PA_MRI.full.(volume_fields{it_volume}).pval = pval;
     PA_MRI.full.(volume_fields{it_volume}).tval = tval;
+    PA_MRI.full.(volume_fields{it_volume}).beta = beta;
+    PA_MRI.full.(volume_fields{it_volume}).sigma2 = sigma2;
     PA_MRI.full.(volume_fields{it_volume}).sample_size = nout;
-    
-%     if pval>ALPHA
-%         disp(['MRI_ALPHA_' volume_fields{it_volume} ])
-%     end
-%     if power<POWER
-%         disp(['MRI_POWER_' volume_fields{it_volume} ])
-%     end
     
     MRI_col(it_volume) = nout; 
     
@@ -71,15 +66,9 @@ for it_volume=1:length(volume_fields)
     PA_Hard.full.(volume_fields{it_volume}).power = power;
     PA_Hard.full.(volume_fields{it_volume}).pval = pval;
     PA_Hard.full.(volume_fields{it_volume}).tval = tval;
+    PA_Hard.full.(volume_fields{it_volume}).beta = beta;
+    PA_Hard.full.(volume_fields{it_volume}).sigma2 = sigma2;
     PA_Hard.full.(volume_fields{it_volume}).sample_size = nout;
-
-%     if pval>ALPHA
-%         disp(['Hard_ALPHA_' volume_fields{it_volume} ])
-%     end
-%     if power<POWER
-%         disp(['Hard_POWER_' volume_fields{it_volume} ])
-%     end
-    
     
     Hard_col(it_volume) = nout; 
 end
@@ -111,16 +100,10 @@ for it_volume=1:length(volume_fields)
     PA_Soft.full.(volume_fields{it_volume}).power = power;
     PA_Soft.full.(volume_fields{it_volume}).pval = pval;
     PA_Soft.full.(volume_fields{it_volume}).tval = tval;
+    PA_Soft.full.(volume_fields{it_volume}).beta = beta;
+    PA_Soft.full.(volume_fields{it_volume}).sigma2 = sigma2;
     PA_Soft.full.(volume_fields{it_volume}).sample_size = nout;
-    
-%     if pval>ALPHA
-%         disp(['Soft_ALPHA_' volume_fields{it_volume} ])
-%     end
-%     if power<POWER
-%         disp(['Soft_POWER_' volume_fields{it_volume} num2str(power) ])
-%     end
-    
-    
+
     Soft_col(it_volume) = nout; 
 end
 
@@ -135,24 +118,24 @@ INTERESTING_VOLUMES_PLOT = {'Cerebral-White-Matter', 'Cerebral-Cortex', 'Lateral
 
 
 % Interesting table
-MRI_interesting_col = zeros(length(INTERESTING_VOLUMES), 4);
-Soft_interesting_col = zeros(length(INTERESTING_VOLUMES), 4);
-Hard_interesting_col = zeros(length(INTERESTING_VOLUMES), 4);
+MRI_interesting_col = zeros(length(INTERESTING_VOLUMES), 5);
+Soft_interesting_col = zeros(length(INTERESTING_VOLUMES), 5);
+Hard_interesting_col = zeros(length(INTERESTING_VOLUMES), 5);
 for it_interesting=1:length(INTERESTING_VOLUMES)
-    MRI_interesting_col(it_interesting,:) = [PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).tval PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
-    Soft_interesting_col(it_interesting,:) = [PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).tval PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
-    Hard_interesting_col(it_interesting,:) = [PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).tval PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
+    MRI_interesting_col(it_interesting,:) = [PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).beta sqrt(PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sigma2) PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_MRI.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
+    Soft_interesting_col(it_interesting,:) = [PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).beta sqrt(PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sigma2) PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_Soft.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
+    Hard_interesting_col(it_interesting,:) = [PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sample_size PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).beta sqrt(PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).sigma2) PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).pval PA_Hard.full.(['Average_' INTERESTING_VOLUMES{it_interesting}]).power];
 end
-TMRI = table(MRI_interesting_col(:,1),MRI_interesting_col(:,2),MRI_interesting_col(:,3),MRI_interesting_col(:,4), 'VariableNames', {'SampleSize','Tval','Pval','Power'});
-TSOFT = table(Soft_interesting_col(:,1),Soft_interesting_col(:,2),Soft_interesting_col(:,3),Soft_interesting_col(:,4), 'VariableNames', {'SampleSize','Tval','Pval','Power'});
-THARD = table(Hard_interesting_col(:,1),Hard_interesting_col(:,2),Hard_interesting_col(:,3),Hard_interesting_col(:,4), 'VariableNames', {'SampleSize','Tval','Pval','Power'});
+TMRI = table(MRI_interesting_col(:,1),MRI_interesting_col(:,2),MRI_interesting_col(:,3),MRI_interesting_col(:,4), MRI_interesting_col(:,5),'VariableNames', {'SampleSize','Beta','Sigma','Pval','Power'});
+TSOFT = table(Soft_interesting_col(:,1),Soft_interesting_col(:,2),Soft_interesting_col(:,3),Soft_interesting_col(:,4), Soft_interesting_col(:,5),'VariableNames', {'SampleSize','Beta','Sigma','Pval','Power'});
+THARD = table(Hard_interesting_col(:,1),Hard_interesting_col(:,2),Hard_interesting_col(:,3),Hard_interesting_col(:,4), Hard_interesting_col(:,5),'VariableNames', {'SampleSize','Beta','Sigma','Pval','Power'});
 TintComplete = table(TMRI,TSOFT,THARD, 'RowNames', INTERESTING_VOLUMES);
 Tint = table(MRI_interesting_col(:,1),Soft_interesting_col(:,1),Hard_interesting_col(:,1), 'RowNames', INTERESTING_VOLUMES, 'VariableNames', {'MRI','Soft','Hard'} );
 
 figure
-plot(MRI_interesting_col,'b'), hold on
-plot(Hard_interesting_col,'r'), hold on
-plot(Soft_interesting_col,'k'), hold on
+plot(MRI_interesting_col(:,1),'b'), hold on
+plot(Hard_interesting_col(:,1),'r'), hold on
+plot(Soft_interesting_col(:,1),'k'), hold on
 set(gca, 'YScale', 'log')
 ylabel('Sample size')
 xticklabels(INTERESTING_VOLUMES_PLOT)
