@@ -2,6 +2,13 @@ Code to process photos from UW
 
 FUNCTIONS / SCRIPTS (please see further info inside the individual functions / scripts)
 
+UWphoto_startup.m:
+Checks that freesurfer has been initialised and sets up some environment 
+variables.
+
+UWphoto_script_SoftReconstructions.m:
+A script to select source photos and call the soft reconstruction function.
+
 ReconPhotoVolume_joint_multires.m: 
 Function to reconstruct a photo volume using a probabilistic atlas as reference
 
@@ -12,6 +19,10 @@ makeMovieFramesHardMask.m:
 Prepares volumes and surfaces for making a registration movie using Freeview.
 Works with the output of ReconPhotoVolume_joint_hard_multires.
 It may be good in the future to write an equivalent script for ReconPhotoVolume_joint_multires.m?
+
+
+
+OLD SEGMENTATION CODE
 
 SegmentPhotosWithSAMSEG.m: 
 Segments a photo reconstruction with a modified version of SAMSEG.
