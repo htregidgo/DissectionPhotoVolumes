@@ -1,3 +1,15 @@
 # Local scripts to run the code
 /code/scripts
 *.m~
+*.png
+*.mgz
+*.nii
+*.nii.gz
+# result directories
+/Results*
+*.zip
+/*test*
+*.mat
+*.xlsx
+*.fig
+*.tiff
